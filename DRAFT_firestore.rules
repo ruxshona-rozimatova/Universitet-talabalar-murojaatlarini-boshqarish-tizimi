@@ -1,0 +1,181 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny all unmatched paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == "ruxshonarozimatova0@gmail.com" &&
+        request.auth.token.email_verified == true;
+    }
+
+    // --- Entity Validation Helpers ---
+    function isValidAppealType(val) {
+      return val in [
+        "Akademik masala",
+        "Stipendiya va moliya",
+        "Yotoqxona",
+        "Texnik yordam",
+        "Hujjat va ma'lumotnoma",
+        "Boshqa"
+      ];
+    }
+
+    function isValidAppealStatus(val) {
+      return val in ["Yangi", "Ko'rib chiqilmoqda", "Yakunlandi"];
+    }
+
+    function isValidAppeal(data) {
+      return data.keys().hasAll([
+          'studentName',
+          'group',
+          'type',
+          'description',
+          'status',
+          'responseNote',
+          'ownerId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'studentName',
+          'group',
+          'type',
+          'description',
+          'status',
+          'responseNote',
+          'ownerId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.studentName is string &&
+        data.studentName.size() >= 2 &&
+        data.studentName.size() <= 100 &&
+        data.group is string &&
+        data.group.size() >= 2 &&
+        data.group.size() <= 30 &&
+        data.type is string &&
+        isValidAppealType(data.type) &&
+        data.description is string &&
+        data.description.size() >= 5 &&
+        data.description.size() <= 2000 &&
+        data.status is string &&
+        isValidAppealStatus(data.status) &&
+        data.responseNote is string &&
+        data.responseNote.size() <= 1000 &&
+        isValidId(data.ownerId) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll([
+          'universityName',
+          'departmentName',
+          'defaultStatusOnCreate',
+          'ownerId',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'universityName',
+          'departmentName',
+          'defaultStatusOnCreate',
+          'ownerId',
+          'updatedAt'
+        ]) &&
+        data.universityName is string &&
+        data.universityName.size() >= 2 &&
+        data.universityName.size() <= 120 &&
+        data.departmentName is string &&
+        data.departmentName.size() >= 2 &&
+        data.departmentName.size() <= 120 &&
+        data.defaultStatusOnCreate is string &&
+        data.defaultStatusOnCreate in ["Yangi", "Ko'rib chiqilmoqda"] &&
+        isValidId(data.ownerId) &&
+        data.updatedAt is timestamp;
+    }
+
+    // --- Collection: appeals ---
+    match /appeals/{appealId} {
+      allow get: if isValidId(appealId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      allow create: if isValidId(appealId) &&
+        isSignedIn() &&
+        isValidAppeal(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(appealId) &&
+        isSignedIn() &&
+        isValidAppeal(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid &&
+            existing().status != "Yakunlandi" &&
+            (
+              incoming().diff(existing()).affectedKeys().hasOnly(['status', 'responseNote', 'updatedAt']) ||
+              incoming().diff(existing()).affectedKeys().hasOnly(['studentName', 'group', 'type', 'description', 'status', 'responseNote', 'updatedAt'])
+            )
+          )
+        );
+
+      allow delete: if isValidId(appealId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // --- Collection: settings ---
+    match /settings/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      allow create: if isValidId(userId) &&
+        isOwner(userId) &&
+        isValidSettings(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId) &&
+        (isOwner(userId) || isAdmin()) &&
+        isValidSettings(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'universityName',
+          'departmentName',
+          'defaultStatusOnCreate',
+          'updatedAt'
+        ]);
+
+      allow delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
+    }
+  }
+}

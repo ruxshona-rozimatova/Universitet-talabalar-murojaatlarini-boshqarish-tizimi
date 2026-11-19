@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "Appeal": {
+      "title": "Talaba Murojaati",
+      "description": "Universitet talabasi tomonidan yuborilgan murojaat va uning ko'rib chiqilish holati.",
+      "type": "object",
+      "properties": {
+        "studentName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100,
+          "description": "Talabaning ism-familiyasi"
+        },
+        "group": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 30,
+          "description": "Talaba o'qiydigan akademik guruh kodi"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Akademik masala",
+            "Stipendiya va moliya",
+            "Yotoqxona",
+            "Texnik yordam",
+            "Hujjat va ma'lumotnoma",
+            "Boshqa"
+          ],
+          "description": "Murojaat turi"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 2000,
+          "description": "Murojaatning batafsil izohi"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Yangi", "Ko'rib chiqilmoqda", "Yakunlandi"],
+          "description": "Murojaatning joriy ko'rib chiqilish holati"
+        },
+        "responseNote": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Mas'ul xodim tomonidan kiritilgan javob yoki izoh"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Yozuv egasining Firebase Auth UID identifikatori"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Yaratilgan server vaqti"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Oxirgi yangilangan server vaqti"
+        }
+      },
+      "required": [
+        "studentName",
+        "group",
+        "type",
+        "description",
+        "status",
+        "responseNote",
+        "ownerId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WorkspaceSettings": {
+      "title": "Tizim Sozlamalari",
+      "description": "Foydalanuvchi ishchi muhiti va universitet bo'limi sozlamalari.",
+      "type": "object",
+      "properties": {
+        "universityName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Universitet nomi"
+        },
+        "departmentName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Mas'ul bo'lim yoki dekanat nomi"
+        },
+        "defaultStatusOnCreate": {
+          "type": "string",
+          "enum": ["Yangi", "Ko'rib chiqilmoqda"],
+          "description": "Yangi murojaat yaratilganda birlamchi holat"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Sozlamalar egasining Firebase Auth UID identifikatori"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Oxirgi yangilangan server vaqti"
+        }
+      },
+      "required": [
+        "universityName",
+        "departmentName",
+        "defaultStatusOnCreate",
+        "ownerId",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/appeals/{appealId}": {
+      "schema": {
+        "$ref": "#/entities/Appeal"
+      },
+      "description": "Talaba murojaatlari asosiy kolleksiyasi"
+    },
+    "/settings/{userId}": {
+      "schema": {
+        "$ref": "#/entities/WorkspaceSettings"
+      },
+      "description": "Har bir foydalanuvchi uchun universitet sozlamalari hujjati"
+    }
+  }
+}

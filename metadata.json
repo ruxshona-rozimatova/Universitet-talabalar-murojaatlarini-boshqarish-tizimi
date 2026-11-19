@@ -1,0 +1,6 @@
+{
+  "name": "TalabaMurojaat — Universitet Murojaatlari Tizimi",
+  "description": "Universitet talabalar murojaatlarini qabul qilish, kuzatish, tahlil qilish va Firebase Firestore bulutida boshqarish uchun o'zbek tilidagi web-ilova.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
